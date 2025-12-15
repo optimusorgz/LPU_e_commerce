@@ -1,17 +1,14 @@
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase/client";
 
-type LoginInput = {
+export async function loginUser({
+  email,
+  password,
+}: {
   email: string;
   password: string;
-};
-
-export async function loginUser({ email, password }: LoginInput) {
-  if (!email || !password) {
-    throw new Error("Email and password are required");
-  }
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
+}) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
     password,
   });
 
@@ -19,5 +16,9 @@ export async function loginUser({ email, password }: LoginInput) {
     throw new Error(error.message);
   }
 
-  return true;
+  if (!data.session) {
+    throw new Error("No session created");
+  }
+
+  return data.session;
 }

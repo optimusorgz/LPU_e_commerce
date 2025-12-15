@@ -17,20 +17,26 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+  e.preventDefault();
+  setError(null);
+  setIsLoading(true);
 
-    try {
-      await loginUser({ email, password });
-      router.push("/dashboard");
-      router.refresh();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+  try {
+    await loginUser({ email, password });
+    const result = await loginUser({ email, password });
+    console.log("loginUser result:", result);
+    console.log("document.cookie:", document.cookie);
+
+
+    // ✅ FORCE full reload so middleware sees cookies
+    window.location.href = "/dashboard";
+  } catch (err: any) {
+    setError(err.message ?? "Login failed");
+  } finally {
+    setIsLoading(false);
   }
+}
+
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-4 relative overflow-hidden">

@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase/supabaseClient";
 
 const UNIVERSITY_EMAIL_REGEX = /^[^\s@]+@lpu\.in$/i;
 
