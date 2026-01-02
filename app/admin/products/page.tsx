@@ -5,54 +5,57 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AdminTable, { Column } from '@/components/AdminTable';
 import { Badge } from '@/components/ui/badge';
-
-interface Product {
-    id: string;
-    title: string;
-    category: string;
-    price: number;
-    seller: string;
-    status: 'active' | 'sold';
-    date: string;
-}
+import { AdminService } from '@/lib/api';
+import { Product } from '@/lib/types';
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadProducts = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await AdminService.getAllProducts();
+            setProducts(response.data.products);
+        } catch (err: any) {
+            console.error('Failed to load products:', err);
+            setError(err.response?.data?.error || 'Failed to load products');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        // Mock fetch
-        const loadProducts = async () => {
-            setLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 800));
-            setProducts([
-                { id: 'p1', title: 'Calculus Textbook', category: 'Books', price: 450, seller: 'Student One', status: 'active', date: '2023-11-20' },
-                { id: 'p2', title: 'Study Table', category: 'Furniture', price: 1200, seller: 'Student Two', status: 'sold', date: '2023-11-18' },
-            ]);
-            setLoading(false);
-        };
         loadProducts();
     }, []);
 
     const columns: Column<Product>[] = [
         { header: 'Title', accessorKey: 'title', className: 'font-medium' },
         { header: 'Category', accessorKey: 'category' },
-        { header: 'Price', accessorKey: (p) => `₹${p.price}` },
-        { header: 'Seller', accessorKey: 'seller' },
+        { header: 'Price', accessorKey: (p) => `₹${(p.priceCents / 100).toFixed(2)}` },
+        { header: 'Seller', accessorKey: (p) => p.user?.name || 'Unknown' },
         {
             header: 'Status',
             accessorKey: (p) => (
-                <Badge variant={p.status === 'active' ? 'outline' : 'secondary'}>
+                <Badge variant={p.status === 'available' ? 'outline' : p.status === 'sold' ? 'secondary' : 'default'}>
                     {p.status}
                 </Badge>
             )
         },
-        { header: 'Date', accessorKey: 'date' },
+        { header: 'Date', accessorKey: (p) => new Date(p.createdAt).toLocaleDateString() },
     ];
 
-    const handleDelete = (product: Product) => {
+    const handleDelete = async (product: Product) => {
         if (confirm(`Delete listing "${product.title}"?`)) {
-            setProducts(products.filter(p => p.id !== product.id));
+            try {
+                await AdminService.deleteProduct(product.id);
+                // Reload products after successful delete
+                await loadProducts();
+            } catch (err: any) {
+                alert(err.response?.data?.error || 'Failed to delete product');
+            }
         }
     };
 
@@ -63,6 +66,11 @@ export default function AdminProductsPage() {
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Product Moderation</h1>
                     <p className="text-gray-500 mt-1">Review and manage listings</p>
+                    {error && (
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                            {error}
+                        </div>
+                    )}
                 </div>
 
                 <AdminTable

@@ -5,32 +5,29 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AdminTable, { Column } from '@/components/AdminTable';
 import { Badge } from '@/components/ui/badge';
-
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: 'admin' | 'user';
-    status: 'active' | 'blocked';
-    joinedAt: string;
-}
+import { AdminService } from '@/lib/api';
+import { User } from '@/lib/types';
 
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadUsers = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await AdminService.getAllUsers();
+            setUsers(response.data.users);
+        } catch (err: any) {
+            console.error('Failed to load users:', err);
+            setError(err.response?.data?.error || 'Failed to load users');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        // Mock fetch
-        const loadUsers = async () => {
-            setLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 800));
-            setUsers([
-                { id: 'u1', name: 'Kaushik Ranjan', email: 'kaushik@university.edu', role: 'admin', status: 'active', joinedAt: '2023-08-15' },
-                { id: 'u2', name: 'Student One', email: 's1@university.edu', role: 'user', status: 'active', joinedAt: '2023-09-01' },
-                { id: 'u3', name: 'Student Two', email: 's2@university.edu', role: 'user', status: 'blocked', joinedAt: '2023-09-05' },
-            ]);
-            setLoading(false);
-        };
         loadUsers();
     }, []);
 
@@ -40,27 +37,33 @@ export default function AdminUsersPage() {
         {
             header: 'Role',
             accessorKey: (user) => (
-                <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                    {user.role}
+                <Badge variant={user.isAdmin ? 'default' : 'secondary'}>
+                    {user.isAdmin ? 'admin' : 'user'}
                 </Badge>
             )
         },
         {
             header: 'Status',
             accessorKey: (user) => (
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${user.isBlocked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
                     }`}>
-                    {user.status}
+                    {user.isBlocked ? 'blocked' : 'active'}
                 </span>
             )
         },
-        { header: 'Joined', accessorKey: 'joinedAt' },
+        { header: 'Joined', accessorKey: (u) => u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A' },
     ];
 
-    const handleBlock = (user: User) => {
-        const newStatus = user.status === 'active' ? 'blocked' : 'active';
-        if (confirm(`Are you sure you want to ${newStatus === 'blocked' ? 'block' : 'unblock'} ${user.name}?`)) {
-            setUsers(users.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
+    const handleBlock = async (user: User) => {
+        const newStatus = user.isBlocked ? 'active' : 'blocked';
+        if (confirm(`Are you sure you want to ${user.isBlocked ? 'unblock' : 'block'} ${user.name}?`)) {
+            try {
+                await AdminService.toggleUserBlock(user.id);
+                // Reload users after successful toggle
+                await loadUsers();
+            } catch (err: any) {
+                alert(err.response?.data?.error || 'Failed to update user status');
+            }
         }
     };
 
@@ -71,6 +74,11 @@ export default function AdminUsersPage() {
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
                     <p className="text-gray-500 mt-1">View and manage platform users</p>
+                    {error && (
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                            {error}
+                        </div>
+                    )}
                 </div>
 
                 <AdminTable

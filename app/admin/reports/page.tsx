@@ -5,37 +5,35 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AdminTable, { Column } from '@/components/AdminTable';
 import { Badge } from '@/components/ui/badge';
-
-interface Report {
-    id: string;
-    productTitle: string;
-    reportedBy: string;
-    reason: string;
-    status: 'pending' | 'resolved';
-    date: string;
-}
+import { AdminService } from '@/lib/api';
+import { Report } from '@/lib/types';
 
 export default function AdminReportsPage() {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadReports = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await AdminService.getAllReports();
+            setReports(response.data.reports);
+        } catch (err: any) {
+            console.error('Failed to load reports:', err);
+            setError(err.response?.data?.error || 'Failed to load reports');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        // Mock fetch
-        const loadReports = async () => {
-            setLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 800));
-            setReports([
-                { id: 'r1', productTitle: 'Inappropriate Book', reportedBy: 'Student A', reason: 'Spam listing', status: 'pending', date: '2023-11-20' },
-                { id: 'r2', productTitle: 'Damaged Chair', reportedBy: 'Student B', reason: 'Misleading description', status: 'resolved', date: '2023-11-15' },
-            ]);
-            setLoading(false);
-        };
         loadReports();
     }, []);
 
     const columns: Column<Report>[] = [
-        { header: 'Product', accessorKey: 'productTitle', className: 'font-medium' },
-        { header: 'Reported By', accessorKey: 'reportedBy' },
+        { header: 'Product', accessorKey: (r) => r.product?.title || 'Unknown', className: 'font-medium' },
+        { header: 'Reported By', accessorKey: (r) => r.reporter?.name || 'Unknown' },
         { header: 'Reason', accessorKey: 'reason' },
         {
             header: 'Status',
@@ -45,12 +43,18 @@ export default function AdminReportsPage() {
                 </Badge>
             )
         },
-        { header: 'Date', accessorKey: 'date' },
+        { header: 'Date', accessorKey: (r) => new Date(r.createdAt).toLocaleDateString() },
     ];
 
-    const handleResolve = (report: Report) => {
+    const handleResolve = async (report: Report) => {
         if (confirm("Mark this report as resolved?")) {
-            setReports(reports.map(r => r.id === report.id ? { ...r, status: 'resolved' } : r));
+            try {
+                await AdminService.resolveReport(report.id, 'approve');
+                // Reload reports after successful resolution
+                await loadReports();
+            } catch (err: any) {
+                alert(err.response?.data?.error || 'Failed to resolve report');
+            }
         }
     };
 
@@ -61,6 +65,11 @@ export default function AdminReportsPage() {
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Reports Handling</h1>
                     <p className="text-gray-500 mt-1">Review user reports and content issues</p>
+                    {error && (
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                            {error}
+                        </div>
+                    )}
                 </div>
 
                 <AdminTable

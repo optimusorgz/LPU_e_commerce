@@ -75,4 +75,43 @@ export const ProductService = {
     }
 };
 
+export const AdminService = {
+    // Dashboard stats
+    getStats: async () => {
+        return api.get('/admin/stats');
+    },
+
+    // User management
+    getAllUsers: async () => {
+        return api.get('/admin/users');
+    },
+    toggleUserBlock: async (userId: string) => {
+        return api.put(`/admin/users/${userId}/toggle-block`);
+    },
+
+    // Product management
+    getAllProducts: async (status?: string) => {
+        return api.get(`/admin/products${status ? `?status=${status}` : ''}`);
+    },
+    deleteProduct: async (productId: string) => {
+        return api.delete(`/products/${productId}`);
+    },
+
+    // Order management
+    getAllOrders: async () => {
+        return api.get('/admin/orders');
+    },
+    updateOrderStatus: async (orderId: string, status: string) => {
+        return api.put(`/admin/orders/${orderId}/status`, { status });
+    },
+
+    // Reports management
+    getAllReports: async () => {
+        return api.get('/admin/reports');
+    },
+    resolveReport: async (reportId: string, action: string, note?: string) => {
+        return api.put(`/admin/reports/${reportId}/resolve`, { action, note });
+    },
+};
+
 export default api;

@@ -6,30 +6,33 @@ import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Package, ShoppingCart, DollarSign, AlertTriangle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { AdminService } from '@/lib/api';
+import { AdminStats } from '@/lib/types';
 
 export default function AdminDashboard() {
-    const [stats, setStats] = useState({
+    const [stats, setStats] = useState<AdminStats>({
         totalUsers: 0,
         totalProducts: 0,
         totalOrders: 0,
-        pendingReports: 0,
-        totalRevenue: 0
+        pendingProducts: 0,
+        paidOrders: 0
     });
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Mock API fetch
         const loadStats = async () => {
-            setLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 800));
-            setStats({
-                totalUsers: 1250,
-                totalProducts: 450,
-                totalOrders: 89,
-                pendingReports: 5,
-                totalRevenue: 450000 // In cents
-            });
-            setLoading(false);
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await AdminService.getStats();
+                setStats(response.data.stats);
+            } catch (err: any) {
+                console.error('Failed to load admin stats:', err);
+                setError(err.response?.data?.error || 'Failed to load statistics');
+            } finally {
+                setLoading(false);
+            }
         };
         loadStats();
     }, []);
@@ -38,7 +41,7 @@ export default function AdminDashboard() {
         { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-blue-600', link: '/admin/users' },
         { title: 'Active Listings', value: stats.totalProducts, icon: Package, color: 'text-purple-600', link: '/admin/products' },
         { title: 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, color: 'text-green-600', link: '/admin/orders' },
-        { title: 'Pending Reports', value: stats.pendingReports, icon: AlertTriangle, color: 'text-red-500', link: '/admin/reports' },
+        { title: 'Pending Products', value: stats.pendingProducts, icon: AlertTriangle, color: 'text-red-500', link: '/admin/products' },
     ];
 
     return (
@@ -49,6 +52,11 @@ export default function AdminDashboard() {
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                     <p className="text-gray-500 mt-1">Overview of marketplace activity</p>
+                    {error && (
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                            {error}
+                        </div>
+                    )}
                 </div>
 
                 {/* Stats Grid */}
@@ -79,23 +87,6 @@ export default function AdminDashboard() {
                         );
                     })}
                 </div>
-
-                {/* Revenue Card (Full Width) */}
-                <Card className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-none">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-blue-100 font-medium mb-1">Total Platform Revenue</p>
-                                <h2 className="text-4xl font-bold">
-                                    ₹{(stats.totalRevenue / 100).toLocaleString()}
-                                </h2>
-                            </div>
-                            <div className="bg-white/10 p-3 rounded-full backdrop-blur-sm">
-                                <DollarSign className="w-8 h-8 text-white" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
 
                 {/* Recent Activity (Optional placeholder) */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

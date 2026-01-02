@@ -3,7 +3,9 @@ export interface User {
     name: string;
     email: string;
     avatarUrl?: string;
+    universityId?: string;
     isAdmin: boolean;
+    isBlocked?: boolean;
     bio?: string;
     createdAt?: string;
 }
@@ -53,4 +55,29 @@ export interface WishlistItem {
     productId: string;
     createdAt: string;
     product?: Product;
+}
+
+export interface Report {
+    id: string;
+    productId: string;
+    reportedBy: string;
+    reason: string;
+    status: 'pending' | 'resolved';
+    createdAt: string;
+    resolvedAt?: string;
+    resolvedBy?: string;
+    product?: Product;
+    reporter?: {
+        id: string;
+        name: string;
+        email: string;
+    };
+}
+
+export interface AdminStats {
+    totalUsers: number;
+    totalProducts: number;
+    totalOrders: number;
+    pendingProducts: number;
+    paidOrders: number;
 }
