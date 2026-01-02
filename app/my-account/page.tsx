@@ -38,10 +38,6 @@ export default function MyAccountPage() {
             if (!userRes.ok) throw new Error('Failed to fetch user');
             const userData = await userRes.json();
             setUser(userData.user);
-            setEditForm({
-                name: userData.user.name || '',
-                bio: userData.user.bio || '',
-            });
 
             // Fetch stats in parallel
             const [productsRes, ordersRes, wishlistRes] = await Promise.all([
@@ -154,7 +150,7 @@ export default function MyAccountPage() {
                             <div className="flex-1 min-w-0">
                                 <h2 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 truncate">{user.name}</h2>
                                 <p className="text-gray-500 text-xs sm:text-xs mb-2 sm:mb-3 truncate">{user.email}</p>
-                                
+
                                 <div className="space-y-1 sm:space-y-2">
                                     <div className="flex items-center gap-1 sm:gap-1.5 text-gray-600 text-xs">
                                         <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 flex-shrink-0" />

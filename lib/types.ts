@@ -5,6 +5,7 @@ export interface User {
     avatarUrl?: string;
     isAdmin: boolean;
     bio?: string;
+    createdAt?: string;
 }
 
 export interface Product {
